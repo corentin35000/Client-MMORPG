@@ -15,7 +15,10 @@
 #include <iostream> // C++
 #include <vector> // tableau dynamique - C++
 using namespace std; // C++
-#include "sceneManager.h"
+#include "sceneManager.cpp"
+#include "game.cpp"
+
+
 
 SDL_Texture *LoadTexture(SDL_Renderer *renderer, char *path)
 {
@@ -42,12 +45,21 @@ ENetHost *client; // Client ENET
 ENetAddress address; // Adress to connection for Server (ip + port)
 ENetEvent eventENET;
 ENetPeer *peer;
- 
+ENetPacket *packet;
+
 // Initialisation variables, pointeurs.. de la librairie : curl 
 CURL *curl;
 CURLcode res;
 
 // DeltaTime
+
+
+//
+class GameServer
+{
+	public:
+		vector<Player> Players;
+};
 
 
 
@@ -64,7 +76,7 @@ Uint32 mouseButtons; // State Mouse.
 int mouseX;
 int mouseY;
 
-const Uint8 *state = SDL_GetKeyboardState(NULL); // State Keyboard.
+const Uint8 *keyState = SDL_GetKeyboardState(NULL); // State Keyboard.
 
 TTF_Font *police;
 SDL_Color policeColor;
@@ -73,7 +85,8 @@ SDL_Surface *surfaceMessage;
 
 void load()
 {
-	//sceneManager_load();
+	sceneManager_load();
+	
 	police = TTF_OpenFont("./assets/fonts/arial.ttf", 10);
 	policeColor = { 255, 255, 255 };
 	surfaceMessage = TTF_RenderText_Solid(police, "TRDDFFSDF", policeColor);
@@ -85,23 +98,9 @@ void load()
 
 void update()
 {	
-	//sceneManager_update();
+	sceneManager_update();
 	
 	mouseButtons = SDL_GetMouseState(&mouseX, &mouseY);
-
-	if ((mouseButtons & SDL_BUTTON_LMASK) != 0) 
-	{
-		SDL_Log("Mouse cursor is at %d, %d", mouseX, mouseY);
-		SDL_Log("Position player %d, %d", playerX, playerY);
-
-		playerEndX = mouseX - (playerWidth / 2);
-		playerEndY = mouseY - (playerHeight / 2);
-	}
-
-	if (state[SDL_SCANCODE_RETURN]) 
-	{
-		printf("<RETURN> is pressed.\n");
-	}
 
 	if (playerEndX != 0 || playerEndY != 0)
 	{
@@ -110,10 +109,18 @@ void update()
 			if (playerEndX < playerX)
 			{
 				playerX -= 1;
+
+				printf("ENVOIE PACKET");
+					/*packet = enet_packet_create(&objectPlayer, sizeof(objectPlayer) + 1, ENET_PACKET_FLAG_RELIABLE);                                
+				enet_peer_send(peer, 0, packet);
+				enet_host_service(client, &eventENET, 0);*/
 			}
 			else if (playerEndX > playerX)
 			{
 				playerX += 1;
+				packet = enet_packet_create("test", strlen("test") + 1, ENET_PACKET_FLAG_RELIABLE);                                
+				enet_peer_send(peer, 0, packet);
+				enet_host_service(client, &eventENET, 0);
 			}
 		}
 		else
@@ -126,10 +133,17 @@ void update()
 			if (playerEndY < playerY)
 			{
 				playerY -= 1;
+				//printf("ENVOIE PACKET");
+				/*packet = enet_packet_create(&objectPlayer, sizeof(objectPlayer) + 1, ENET_PACKET_FLAG_RELIABLE);                                
+				enet_peer_send(peer, 0, packet);
+				enet_host_service(client, &eventENET, 0);*/
 			}
 			else if (playerEndY > playerY)
 			{
 				playerY += 1;
+				/*packet = enet_packet_create(&objectPlayer, sizeof(objectPlayer) + 1, ENET_PACKET_FLAG_RELIABLE);                                
+				enet_peer_send(peer, 0, packet);
+				enet_host_service(client, &eventENET, 0);*/
 			}
 		}
 		else
@@ -137,11 +151,12 @@ void update()
 			playerEndY = 0;
 		}
 	}
+
 }
 
 void draw()
 {
-	//sceneManager_draw();
+	sceneManager_draw();
 
 	SDL_Rect rectDest = { playerX, playerY, playerWidth, playerHeight };
 	SDL_RenderCopy(renderer, playerImg, NULL, &rectDest);
@@ -158,39 +173,56 @@ void draw()
 
 void keypressed()
 {
+	sceneManager_keypressed();
 
+	if (keyState[SDL_SCANCODE_RETURN]) 
+	{
+		printf("<RETURN> is pressed.\n");
+	}
 }
 
 void mousepressed()
 {
+	sceneManager_mousepressed();
 
+	if ((mouseButtons & SDL_BUTTON_LMASK) != 0) 
+	{
+		SDL_Log("Mouse cursor is at %d, %d", mouseX, mouseY);
+		SDL_Log("Position player %d, %d", playerX, playerY);
+
+		playerEndX = mouseX - (playerWidth / 2);
+		playerEndY = mouseY - (playerHeight / 2);
+	}
 }
 
 void textinput()
 {
-
+	sceneManager_textinput();
 }
 
 void updateReseauUDP()
 {
 	enet_host_service(client, &eventENET, 0);
 
-	switch (eventENET.type)
-	{
-		case ENET_EVENT_TYPE_RECEIVE:
-			printf("Un paquet de %u octets contenant %s a etais recue du server sur le canal %u \n",
-			eventENET.packet->dataLength,
-			eventENET.packet->data,
-			eventENET.channelID);
-			
-			//printf("%s \n", eventENET.packet->data)
+    switch (eventENET.type)
+    {
+        case ENET_EVENT_TYPE_RECEIVE:
+            printf("Un paquet de %u octets contenant %s a etais recue du server sur le canal %u \n",
+            eventENET.packet->dataLength,
+            eventENET.packet->data,
+            eventENET.channelID);
+            
+            //printf("%s \n", eventENET.packet->data)
 
-			enet_packet_destroy(eventENET.packet);
-			break;
+            enet_packet_destroy(eventENET.packet);
+            break;
 
-		case ENET_EVENT_TYPE_DISCONNECT:
-			printf("Server disconnected.");
-	}
+        case ENET_EVENT_TYPE_DISCONNECT:
+            printf("Server disconnected.");
+    }
+
+	enet_peer_ping(peer);
+	printf("PING : %u \n", peer->roundTripTime);
 }
 
 
@@ -213,11 +245,13 @@ int main(int argc, char *argv[])
 
 
 	// Create window
+	const int SCREEN_WIDTH = 1600;
+	const int SCREEN_HEIGHT = 900;
 	window = SDL_CreateWindow("Seafight - Client",
 										  SDL_WINDOWPOS_CENTERED,
 										  SDL_WINDOWPOS_CENTERED,
-										  1280,
-										  740,
+										  SCREEN_WIDTH,
+										  SCREEN_HEIGHT,
 										  SDL_WINDOW_SHOWN);
 	if (window == NULL)
 	{
@@ -274,36 +308,13 @@ int main(int argc, char *argv[])
 		printf("CURL non initialiser ! \n");
         return -1;
     }
-	else
-	{
-		curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
-		curl_easy_setopt(curl, CURLOPT_URL, "https://crz-gamestudio.com/jeu/keyAccess.php?keyAccessUser=grjidfnjikhf33203dsfhjWSSJEZN");
-		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
-		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-		
-		struct curl_slist *headers = NULL;
-		curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-		curl_mime *mime;
-		curl_mimepart *part;
-		mime = curl_mime_init(curl);
-		part = curl_mime_addpart(mime);
-		curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
-		
-		res = curl_easy_perform(curl); // Response body for back-end in PHP.
+	
 
-		if(res != CURLE_OK)
-		{
-			fprintf(stderr, "curl_easy_perform () a échoué : %s\n", curl_easy_strerror (res));
-		}
-		else
-		{
-			printf("Request HTTP OK \n");
-		}
-			  
-		curl_mime_free(mime);
-		curl_easy_cleanup(curl);
-	}
+	//SCENE LOGIN
+	/*while (true)
+	{
+
+	}*/
 
 
 	// Initialisation de la librairie : ENET (sockets UDP)
@@ -339,6 +350,9 @@ int main(int argc, char *argv[])
 	if (enet_host_service(client, &eventENET, 5000) > 0 && eventENET.type == ENET_EVENT_TYPE_CONNECT) 
 	{
 		printf("Connection to server. \n");
+		enet_peer_ping_interval(peer, ENET_PEER_PING_INTERVAL);
+		enet_peer_ping(peer);
+		peer->roundTripTime = peer->lastRoundTripTime;
 	}
 	else 
 	{
@@ -386,6 +400,7 @@ int main(int argc, char *argv[])
 		Mix_Quit();
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
+	enet_peer_disconnect_later(peer, 0);
 	enet_peer_reset(peer);
 	enet_host_destroy(client);
 	enet_deinitialize();

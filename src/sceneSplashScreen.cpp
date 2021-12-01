@@ -17,32 +17,31 @@
 using namespace std; // C++
 
 
-void static sceneLogin_load()
+void static sceneSplashScreen_load()
+{
+}
+
+void static sceneSplashScreen_update()
 {
 
 }
 
-void static sceneLogin_update()
-{
-}
-
-
-void static sceneLogin_draw()
+void static sceneSplashScreen_draw()
 {
 
 }
 
-void static sceneLogin_keypressed()
-{
-	
-}
-
-void static sceneLogin_mousepressed()
+void static sceneSplashScreen_keypressed()
 {
 	
 }
 
-void static sceneLogin_textinput()
+void static sceneSplashScreen_mousepressed()
+{
+	
+}
+
+void static sceneSplashScreen_textinput()
 {
 
 }

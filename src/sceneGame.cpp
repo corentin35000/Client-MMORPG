@@ -17,15 +17,32 @@
 using namespace std; // C++
 
 
-void sceneGame_load()
+void static sceneGame_load()
 {
-	printf("SCENE MANAGER LOAD");
+
 }
 
-void sceneGame_update()
+void static sceneGame_update()
 {
+
 }
 
-void sceneGame_draw()
+void static sceneGame_draw()
 {
+
+}
+
+void static sceneGame_keypressed()
+{
+	
+}
+
+void static sceneGame_mousepressed()
+{
+	
+}
+
+void static sceneGame_textinput()
+{
+
 }
