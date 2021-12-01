@@ -72,6 +72,16 @@ int playerY = 0;
 int playerEndX = 0;
 int playerEndY = 0;
 
+SDL_Texture *playerImg2; // Player Data
+int playerWidth2;
+int playerHeight2;
+int playerX2 = 0;
+int playerY2 = 0;
+int playerEndX2 = 0;
+int playerEndY2 = 0;
+
+int clients = 0;
+
 Uint32 mouseButtons; // State Mouse.
 int mouseX;
 int mouseY;
@@ -94,6 +104,9 @@ void load()
 
 	playerImg = LoadTexture(renderer, (char*)"./assets/images/1.png");
 	SDL_QueryTexture(playerImg, NULL, NULL, &playerWidth, &playerHeight);
+
+	playerImg2 = LoadTexture(renderer, (char*)"./assets/images/7.png");
+	SDL_QueryTexture(playerImg2, NULL, NULL, &playerWidth2, &playerHeight2);
 }
 
 void update()
@@ -161,14 +174,20 @@ void draw()
 	SDL_Rect rectDest = { playerX, playerY, playerWidth, playerHeight };
 	SDL_RenderCopy(renderer, playerImg, NULL, &rectDest);
 
-	int texW = 0;
+	if (clients == 1)
+	{
+		SDL_Rect rectDest2 = { playerX2, playerY2, playerWidth2, playerHeight2 };
+		SDL_RenderCopy(renderer, playerImg2, NULL, &rectDest2);
+	}
+
+	/*int texW = 0;
 	int texH = 0;
 	SDL_QueryTexture(textureFont, NULL, NULL, &texW, &texH);
 	SDL_Rect dstrect = { 0, 0, texW, texH };
 	SDL_Rect t = { 100, 100, texW, texH };
 
 	SDL_RenderCopy(renderer, textureFont, NULL, &dstrect);
-	SDL_RenderCopy(renderer, textureFont, NULL, &t);
+	SDL_RenderCopy(renderer, textureFont, NULL, &t);*/
 }
 
 void keypressed()
@@ -178,6 +197,9 @@ void keypressed()
 	if (keyState[SDL_SCANCODE_RETURN]) 
 	{
 		printf("<RETURN> is pressed.\n");
+		packet = enet_packet_create("test", strlen("test") + 1, ENET_PACKET_FLAG_RELIABLE);                                
+		enet_peer_send(peer, 0, packet);
+		enet_host_service(client, &eventENET, 0);
 	}
 }
 
@@ -213,6 +235,15 @@ void updateReseauUDP()
             eventENET.channelID);
             
             //printf("%s \n", eventENET.packet->data)
+			if (eventENET.packet->data == "newClient")
+			{
+				clients += 1;
+			}
+			else if (eventENET.packet->data == "test")
+			{
+				playerX2 += 1;
+			}
+			
 
             enet_packet_destroy(eventENET.packet);
             break;
@@ -222,7 +253,7 @@ void updateReseauUDP()
     }
 
 	enet_peer_ping(peer);
-	printf("PING : %u \n", peer->roundTripTime);
+	//printf("PING : %u \n", peer->roundTripTime);
 }
 
 
